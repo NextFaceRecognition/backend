@@ -6,6 +6,7 @@ from service.model import db
 from service.model.face import Face
 from service.model.log import Log
 
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(service.config)

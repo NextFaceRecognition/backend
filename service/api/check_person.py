@@ -1,59 +1,53 @@
 import datetime
 from flask import Blueprint
 from flask import request
-from service.common.utils import get_data, gen_img_name, decode_img, save_img, \
-                                face_encoding, get_most_related_face, addLog, \
-                                face_compare
+from service.common.utils import gen_img_name, decode_img, save_img, \
+                                 face_encoding, get_most_related_face, \
+                                 add_log, face_compare
 from service.common.responser import *
 from service import parameters
 
-
 check_person_module = Blueprint("check_person_module", __name__)
 
-# 人脸验证服务
 @check_person_module.route('/faceService/checkPerson', methods=['POST'])
 def check_person():
-    '''
-    程序流程：
-    1、检查请求参数
-    2、读取数据库中对应的图片编码
-    3、解码并保存图片
-    4、人脸编码
-    5、两张照片对比
-    6、对比记录存数据库
-    '''
-
-    # 检查请求参数，同时获取这些数据，赋值给对应变量，如果数值不存在，则返回输入字段缺失错误
-    try:
-        uid, uid_type, name, channel, encoded_img =\
-                get_data(request.form, ['uid', 'uid_type', 'name', 'channel', 'img'])
-    except KeyError:
-        return InputIntegrityException.wrap()
+    """Verify person service
     
-    # 给该请求标记一个timestamp，后续作为统一的标记
+    Program flow：
+    1. Get and check parameters.
+    2. Decode and save image.
+    3. Read from face(s) to be compared from database.
+    4. Compare face.
+    5. Log the request.
+    """
+
+    # Get paramters.
+    key_list = ['uid', 'uid_type', 'name', 'channel', 'img']
+    try:
+        uid, uid_type, name, channel, encoded_img = \
+            [request.form[key] for key in key_list]
+    except KeyError:
+        return InputMissingResponser.wrap()
+    
+    # Generate a timestamp to mark this request.
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 
-    # 生成图片路径，将图片解码并保存
     img_name = gen_img_name(uid, timestamp)
 
-    try:
-        img = decode_img(encoded_img)
-        img_path = save_img(img, parameters['check_image_root'], img_name)
-    # 读取参数时如果没有login_image_root键，就回报错
-    except KeyError:
-        return SystemParametersException.wrap()
+    img = decode_img(encoded_img)
+    img_path = save_img(img, parameters['check_image_root'], img_name)
 
-    # 读取文件夹下的图片，进行人脸编码
+    # Encode face from image in file system.
     encoded_face = face_encoding(img_path)
-    # 找不到人脸时，编码为空
+    # Cannot found face.
     if encoded_face is None:
-        return CannotFoundFaceException.wrap()
+        return CannotFoundFaceResponser.wrap()
 
-    '''
-        此处设计了两种模式：
-            1vN模式表示没有上传uid，直接匹配人脸
-            1v1模式表示上传了uid，将uid对应的人脸和上传人脸进行一对一对比
-    '''
+    # There are two modes:
+    #   1) one vs one: given the user's id, and 
+    #      match the face in database directly.
+    #   2) one vs n: retrieve the most related
+    #      face and compare it with uploaded face.
     if 'mode' not in request.form:
         mode = '1v1'
     else:
@@ -61,23 +55,21 @@ def check_person():
 
     if mode == '1vN':
         logined_face = get_most_related_face(encoded_face)
+        if logined_face is None:
+            return FaceAbsentResponser.wrap()
         uid, uid_type, name = logined_face.uid, logined_face.uid_type, logined_face.name
         print('The most related user: uid = %s, uid_type=%s name = %s' % (uid, uid_type, name))
     elif mode == '1v1':
-        # 读取数据库中的注册人脸
-        try:
-            logined_face = get_login_face(uid)
-        except NoResultFound:
-            return FaceAbsentException.wrap()
+        # Read face from database.
+        logined_face = get_login_face(uid)
         if not logined_face:
-            return FaceAbsentException.wrap()
+            return FaceAbsentResponser.wrap()
 
-    # 将encoded_face（上传的人脸）和logined_face（注册时的人脸）进行比较
-    # 返回的sim为相似度，sim_result为对比结果
+    # sim is the similarity of two faces.(0-1, the larger, the more similar)
     sim, result = face_compare(logined_face, encoded_face, parameters['tolerance'])
 
-    # 将对比记录存放到数据库
-    flow_no = addLog(
+    # Save log to database.
+    flow_no = add_log(
         uid=uid, 
         uid_type=uid_type,
         name=name,
@@ -88,5 +80,10 @@ def check_person():
         result=result
     )
 
-    return CheckFaceSuccess.wrap(uid=uid, uid_type=uid_type, name=name, \
-        sim=round(sim, 5), simResult=result, imgFlowNo=flow_no, mode=mode)
+    return CheckFaceSuccessResponser.wrap(uid=uid, 
+                                          uid_type=uid_type, 
+                                          name=name, 
+                                          sim=round(sim, 5), 
+                                          simResult=result, 
+                                          imgFlowNo=flow_no, 
+                                          mode=mode)

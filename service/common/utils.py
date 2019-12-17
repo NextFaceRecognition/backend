@@ -1,25 +1,28 @@
 import os
 import base64
+
 import numpy as np
+from werkzeug.utils import secure_filename
 import face_recognition
+
 from service.model import db
 from service.model.face import Face
 from service.model.log import Log
 
-def get_data(obj, fields):
-    """Get a generator to iterate over object."""
-    for field in fields:
-        yield obj[field]
 
 def gen_img_name(uid, timestamp):
-    """Generate image name."""
+    """Generate image name according to user id and timestamp."""
+    uid = secure_filename(uid)
+    timestamp = secure_filename(timestamp)
     img_name = '{}-{}.jpg'.format(uid, timestamp)
-    return img_name.split('/')[-1]
+    return img_name
+
 
 def decode_img(encoded_img):
     """Decode base64 code to an image."""
     img = base64.b64decode(encoded_img)
     return img
+
 
 def save_img(img, file_dir, file_name):
     """Save image to file system."""
@@ -31,9 +34,9 @@ def save_img(img, file_dir, file_name):
         f.write(img)
     return file_path
 
+
 def face_encoding(img_path):
     """Read image from file system, and encode to a vector."""
-    # Load image.
     img = face_recognition.load_image_file(img_path)
     # Use hog algorithm first.
     boxes = face_recognition.face_locations(img, model='hog')
@@ -46,20 +49,22 @@ def face_encoding(img_path):
         return encoded_faces[0]
     return None
 
+
 def save_face(uid, uid_type, name, channel, 
               timestamp, encoded_face, img_path):
     """Save information of face to database."""
     user = Face(
+        feature_array=encoded_face,
         uid=uid, 
         uid_type=uid_type, 
         name=name, 
         channel=channel, 
-        feature_array=encoded_face,
         login_time=timestamp, 
         img_path=img_path
     )
     db.session.add(user)
     db.session.commit()
+
 
 def get_most_related_face(encoded_face):
     """Find the most related face from database."""
@@ -75,7 +80,10 @@ def get_most_related_face(encoded_face):
             most_related_face = face
     return most_related_face
 
-def addLog(uid, uid_type, name, channel, check_time, img_path, sim, result):
+
+def add_log(uid, uid_type, name, channel, check_time, img_path, sim, result):
+    """Write a log to Log table in database.
+    """
     log = Log(
         uid=uid, 
         uid_type=uid_type, 
@@ -93,10 +101,30 @@ def addLog(uid, uid_type, name, channel, check_time, img_path, sim, result):
     db.session.commit()
     return flow_no
 
+
 def face_compare(logined_face, encoded_face, tolerance):
-	logined_face_encoding = logined_face.feature.split('|')
-	logined_face_encoding = list(map(lambda x: float(x), logined_face_encoding))
-	face_distance = float(face_recognition.face_distance([logined_face_encoding], encoded_face)[0])
-	sim_result = '1' if face_distance < tolerance else '0'
-	sim = 1 - face_distance
-	return sim, sim_result
+    """Compare two face and return result.
+    
+    Args:
+        logined_face: a vector of face logined in database.
+        encoded_face: a vector of uploaded face.
+    
+    Return:
+        sim: similarity of two faces.
+        sim_result: result of comparation, 
+                    '1' represents two faces are same, 
+                    '0' not.
+    """
+    logined_face_encoding = logined_face.feature.split('|')
+
+    logined_face_encoding = list(
+                                 map(lambda x: float(x), 
+                                     logined_face_encoding)
+                                )
+    distances = face_recognition.face_distance(
+        [logined_face_encoding], encoded_face)
+    face_distance = float(distances[0])
+    sim_result = '1' if face_distance < tolerance else '0'
+    sim = 1 - face_distance
+    return sim, sim_result
+

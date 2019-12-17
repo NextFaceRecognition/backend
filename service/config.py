@@ -1,9 +1,9 @@
-# # 调试模式是否开启
+# Debug mode flag.
 DEBUG = True
-# 数据库立即读写
+# Write database immediately.
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-#session必须要设置key
+# Key of session.
 SECRET_KEY='A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
-# 数据库URL
+# Url of database.
 SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost:3306/faceDB'
 
