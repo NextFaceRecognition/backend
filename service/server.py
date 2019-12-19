@@ -13,6 +13,8 @@ def create_app():
     app.register_blueprint(add_face_module)
     app.register_blueprint(check_person_module)
     db.init_app(app)
+    with app.app_context():
+        db.create_all()
     
     return app
 

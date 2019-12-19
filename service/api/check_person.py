@@ -1,13 +1,15 @@
 import datetime
+
 from flask import Blueprint
 from flask import request
+
 from service.common.utils import gen_img_name, decode_img, save_img, \
                                  face_encoding, get_most_related_face, \
-                                 add_log, face_compare
+                                 add_log, face_compare, get_login_face
 from service.common.responser import *
 from service import parameters
 
-check_person_module = Blueprint("check_person_module", __name__)
+check_person_module = Blueprint('check_person_module', __name__)
 
 @check_person_module.route('/faceService/checkPerson', methods=['POST'])
 def check_person():

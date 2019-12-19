@@ -29,7 +29,7 @@ def save_img(img, file_dir, file_name):
     file_path = os.path.join(file_dir, file_name)
     # In case image folder not exits.
     if not os.path.exists(file_dir):
-        os.mkdir(file_dir)
+        os.makedirs(file_dir, exist_ok=True)
     with open(file_path, 'wb') as f:
         f.write(img)
     return file_path
@@ -128,3 +128,8 @@ def face_compare(logined_face, encoded_face, tolerance):
     sim = 1 - face_distance
     return sim, sim_result
 
+
+def get_login_face(uid):
+    """Retrieve face from database according to user id."""
+    face = Face.query.filter_by(uid=uid).first()
+    return face

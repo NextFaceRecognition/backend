@@ -1,12 +1,14 @@
 import datetime
+
 from flask import Blueprint
 from flask import request
 from sqlalchemy.exc import IntegrityError
+
 from service.common.utils import gen_img_name, save_img, face_encoding, decode_img, save_face
 from service.common.responser import *
 from service import parameters
 
-add_face_module = Blueprint("add_face_module", __name__)
+add_face_module = Blueprint('add_face_module', __name__)
 
 @add_face_module.route('/faceService/addFaces', methods=['POST'])
 def add_face():
