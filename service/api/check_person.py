@@ -15,7 +15,7 @@ check_person_module = Blueprint('check_person_module', __name__)
 def check_person():
     """Verify person service
     
-    Program flow：
+    Program flow
     1. Get and check parameters.
     2. Decode and save image.
     3. Read from face(s) to be compared from database.
@@ -55,17 +55,19 @@ def check_person():
     else:
         mode = request.form['mode']
 
-    if mode == '1vN':
+    if mode.lower() == '1vn':
         logined_face = get_most_related_face(encoded_face)
         if logined_face is None:
             return FaceAbsentResponser.wrap()
         uid, uid_type, name = logined_face.uid, logined_face.uid_type, logined_face.name
-        print('The most related user: uid = %s, uid_type=%s name = %s' % (uid, uid_type, name))
-    elif mode == '1v1':
+    elif mode.lower() == '1v1':
         # Read face from database.
         logined_face = get_login_face(uid)
         if not logined_face:
             return FaceAbsentResponser.wrap()
+    else:
+        # mode is not allowed.
+        ModeNotAllowedResponser.wrap()
 
     # sim is the similarity of two faces.(0-1, the larger, the more similar)
     sim, result = face_compare(logined_face, encoded_face, parameters['tolerance'])

@@ -34,11 +34,8 @@ def add_face():
 
     img_name = gen_img_name(uid, timestamp)
 
-    try:
-        img = decode_img(encoded_img)
-        img_path = save_img(img, parameters['login_image_root'], img_name)
-    except KeyError:
-        return SystemErrorResponser.wrap()
+    img = decode_img(encoded_img)
+    img_path = save_img(img, parameters['login_image_root'], img_name)
 
     # Encode face from image in file system.
     encoded_face = face_encoding(img_path)

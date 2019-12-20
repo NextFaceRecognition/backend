@@ -2,12 +2,12 @@ import json
 
 __all__ = [
     'InputMissingResponser', 
-    'SystemErrorResponser', 
     'AddFaceSuccessResponser',
     'FaceAlreadyLoginedResponser',
     'CannotFoundFaceResponser',
     'FaceAbsentResponser',
-    'CheckFaceSuccessResponser'
+    'CheckFaceSuccessResponser',
+    'ModeNotAllowedResponser'
 ]
 
 
@@ -45,11 +45,10 @@ class CheckFaceResponser(CommonResponser):
         return super().wrap()
 
 
-InputMissingResponser = CommonResponser(code=1, message='请求输入参数中，有缺失参数')
-SystemErrorResponser = CommonResponser(code=12, message='系统参数读取错误')
+InputMissingResponser = CommonResponser(code=400, message='请求输入参数中，有缺失参数')
 AddFaceSuccessResponser = CommonResponser(code=0, message='注册成功')
-FaceAlreadyLoginedResponser = CommonResponser(code=10, message='该人脸已经注册过了')
-CannotFoundFaceResponser = CommonResponser(code=8, message='找不到图片中的人脸')
-FaceAbsentResponser = CommonResponser(code=9, message='人脸未注册')
+FaceAlreadyLoginedResponser = CommonResponser(code=409, message='该人脸已经注册过了')
+CannotFoundFaceResponser = CommonResponser(code=410, message='找不到图片中的人脸')
+FaceAbsentResponser = CommonResponser(code=401, message='人脸未注册')
 CheckFaceSuccessResponser = CheckFaceResponser(code=0, message='成功请求人脸识别服务')
-
+ModeNotAllowedResponser = CommonResponser(code=405, message='验证方法非法，请检查')
