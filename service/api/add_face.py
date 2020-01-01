@@ -14,7 +14,7 @@ add_face_module = Blueprint('add_face_module', __name__)
 def add_face():
     """Login face service.
     
-    Program flow：:
+    Program flow:
     1. Get and check parameters
     2. Decode and save image.
     3. Encode image into face vector.
